@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Stock Master - แก้ไขปุ่มหาย</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg-body: #f1f5f9;
+            --surface: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --danger: #ef4444;
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            --radius: 16px;
+        }
+
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            margin: 0; padding: 0; padding-bottom: 100px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* --- Header --- */
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px; position: sticky; top: 0; z-index: 100;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .brand { font-size: 1.3rem; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+        .btn-settings {
+            background: #e2e8f0; border: none; width: 40px; height: 40px; border-radius: 50%;
+            color: var(--text-main); font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+
+        /* --- Filter --- */
+        .filter-container {
+            padding: 12px 20px; overflow-x: auto; white-space: nowrap;
+            -ms-overflow-style: none; scrollbar-width: none; background: var(--bg-body);
+        }
+        .filter-container::-webkit-scrollbar { display: none; }
+        .chip {
+            display: inline-flex; padding: 8px 16px; margin-right: 8px;
+            background: var(--surface); border: 1px solid #cbd5e1; border-radius: 50px;
+            font-size: 0.9rem; color: var(--text-muted); cursor: pointer; transition: 0.2s;
+        }
+        .chip.active {
+            background: var(--primary); color: white; border-color: var(--primary);
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+        }
+
+        /* --- Grid --- */
+        .grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+            gap: 16px; padding: 0 20px; max-width: 1200px; margin: 0 auto;
+        }
+
+        .card {
+            background: var(--surface); border-radius: var(--radius);
+            overflow: hidden; position: relative;
+            box-shadow: var(--shadow); border: 1px solid #fff;
+            transition: transform 0.2s; cursor: pointer;
+        }
+        .card:hover { transform: translateY(-3px); }
+
+        .card-img-wrap {
+            width: 100%; height: 160px; background: #e2e8f0; position: relative; z-index: 1; /* Layer ล่าง */
+        }
+        .card-img { width: 100%; height: 100%; object-fit: cover; }
+        
+        /* ป้ายหมวดหมู่ */
+        .card-badge {
+            position: absolute; top: 10px; left: 10px; z-index: 10;
+            background: rgba(255,255,255,0.9); padding: 4px 10px; border-radius: 8px;
+            font-size: 0.75rem; font-weight: 600; color: var(--primary);
+            backdrop-filter: blur(4px);
+        }
+
+        /* --- ปุ่มแก้ไข/ลบ (ตัวสำคัญที่แก้) --- */
+        .action-row {
+            position: absolute; top: 10px; right: 10px; 
+            display: flex; gap: 8px;
+            z-index: 20; /* ดันให้ลอยเหนือรูปภาพแน่นอน */
+        }
+        .mini-btn {
+            width: 32px; height: 32px; border-radius: 50%; border: none;
+            background: rgba(255,255,255,0.95); 
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: transform 0.1s;
+        }
+        .mini-btn:active { transform: scale(0.9); }
+        .icon-edit { color: #f59e0b; font-size: 1.1rem; } /* สีส้ม */
+        .icon-del { color: #ef4444; font-size: 1.1rem; } /* สีแดง */
+
+        .card-body { padding: 12px; position: relative; z-index: 2; background: white; }
+        .card-title { font-size: 1rem; font-weight: 500; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .code-box {
+            background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+            padding: 6px 10px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .code-text { font-family: monospace; font-size: 0.9rem; color: var(--text-main); font-weight: 600; }
+
+        /* FAB */
+        .fab {
+            position: fixed; bottom: 30px; right: 30px;
+            width: 60px; height: 60px; border-radius: 50%;
+            background: var(--primary); color: white; border: none;
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.4);
+            font-size: 28px; cursor: pointer; z-index: 50;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* Modal */
+        .modal-backdrop {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
+            z-index: 200; opacity: 0; visibility: hidden; transition: all 0.3s;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .modal-backdrop.active { opacity: 1; visibility: visible; }
+        
+        .modal-panel {
+            background: white; width: 90%; max-width: 400px;
+            border-radius: 20px; padding: 25px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+            transform: scale(0.95); transition: all 0.3s;
+            max-height: 85vh; overflow-y: auto;
+        }
+        .modal-backdrop.active .modal-panel { transform: scale(1); }
+
+        .form-control {
+            width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px;
+            font-size: 1rem; margin-bottom: 15px; box-sizing: border-box; font-family: inherit;
+        }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 10px; font-size: 1rem; cursor: pointer; margin-top: 5px; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-danger { background: #fee2e2; color: #ef4444; margin-top: 15px; }
+        
+        .menu-item {
+            padding: 12px; background: #f8fafc; border-radius: 10px; margin-bottom: 8px;
+            cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+        }
+        
+        .cat-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .toast {
+            position: fixed; bottom: -80px; left: 50%; transform: translateX(-50%);
+            background: #1e293b; color: white; padding: 12px 24px; border-radius: 50px;
+            display: flex; align-items: center; gap: 10px; z-index: 300; transition: bottom 0.4s;
+        }
+        .toast.show { bottom: 30px; }
+        .empty-state { grid-column: 1/-1; text-align: center; color: #94a3b8; padding: 50px 0; }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand"><i class="ri-archive-stack-fill"></i> Stock Master</div>
+        <button class="btn-settings" onclick="openSettings()"><i class="ri-settings-3-fill"></i></button>
+    </header>
+
+    <div class="filter-container" id="filterBar"></div>
+    <div class="grid" id="catalog"></div>
+
+    <button class="fab" onclick="openProductModal()"><i class="ri-add-line"></i></button>
+
+    <div class="modal-backdrop" id="modalProduct">
+        <div class="modal-panel">
+            <h3 style="margin-top:0;" id="modalTitle">สินค้า</h3>
+            
+            <label>หมวดหมู่</label>
+            <select id="inputCategory" class="form-control"></select>
+            
+            <label>ชื่อสินค้า</label>
+            <input type="text" id="inputName" class="form-control">
+            
+            <label>รหัสสินค้า</label>
+            <input type="text" id="inputId" class="form-control">
+            
+            <label>รูปภาพ</label>
+            <input type="file" id="inputFile" class="form-control" accept="image/*">
+            
+            <button class="btn btn-primary" onclick="saveFormData()" id="btnSave">บันทึก</button>
+            <button class="btn" onclick="closeModal('modalProduct')" style="background:transparent; color:#64748b;">ยกเลิก</button>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalSettings">
+        <div class="modal-panel">
+            <h3 style="margin-top:0;">ตั้งค่า</h3>
+            
+            <h5 style="color:#64748b; margin-bottom:10px;">จัดการหมวดหมู่</h5>
+            <div style="display:flex; gap:5px; margin-bottom:10px;">
+                <input id="newCatInput" class="form-control" placeholder="ชื่อหมวดใหม่" style="margin:0;">
+                <button onclick="addNewCategory()" class="btn btn-primary" style="width:60px; margin:0;"><i class="ri-add-line"></i></button>
+            </div>
+            <div id="catManagerList" style="max-height:150px; overflow-y:auto; margin-bottom:20px;"></div>
+
+            <h5 style="color:#64748b; margin-bottom:10px;">ข้อมูล</h5>
+            <div class="menu-item" onclick="exportData()">
+                <span><i class="ri-download-cloud-line"></i> Backup (ส่งออก)</span> <i class="ri-arrow-right-s-line"></i>
+            </div>
+            <div class="menu-item" onclick="document.getElementById('importFile').click()">
+                <span><i class="ri-upload-cloud-line"></i> Restore (นำเข้า)</span> <i class="ri-arrow-right-s-line"></i>
+            </div>
+            <input type="file" id="importFile" hidden accept=".json" onchange="importData(this)">
+
+            <button class="btn btn-danger" onclick="deleteAllData()">ล้างข้อมูลทั้งหมด</button>
+            <button class="btn" onclick="closeModal('modalSettings')" style="margin-top:10px; background:#f1f5f9;">ปิด</button>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">
+        <i class="ri-checkbox-circle-fill" style="color:#4ade80"></i> <span id="toastMsg">บันทึกแล้ว</span>
+    </div>
+
+<script>
+    let products = JSON.parse(localStorage.getItem('sm_products')) || [];
+    let categories = JSON.parse(localStorage.getItem('sm_categories')) || ['ทั่วไป'];
+    let currentFilter = 'ทั้งหมด';
+    let editIndex = -1;
+
+    const dom = {
+        catalog: document.getElementById('catalog'),
+        filterBar: document.getElementById('filterBar'),
+        toast: document.getElementById('toast'),
+        toastMsg: document.getElementById('toastMsg')
+    };
+
+    function render() {
+        // Render Filter
+        let html = '';
+        ['ทั้งหมด', ...categories].forEach(cat => {
+            const active = cat === currentFilter ? 'active' : '';
+            html += `<div class="chip ${active}" onclick="setFilter('${cat}')">${cat}</div>`;
+        });
+        dom.filterBar.innerHTML = html;
+
+        // Render Catalog
+        dom.catalog.innerHTML = "";
+        const filtered = currentFilter === 'ทั้งหมด' ? products : products.filter(p => p.category === currentFilter);
+        
+        if (filtered.length === 0) {
+            dom.catalog.innerHTML = `<div class="empty-state"><i class="ri-inbox-line" style="font-size:3rem;"></i><br>ไม่มีรายการ</div>`;
+            return;
+        }
+
+        filtered.forEach(item => {
+            const realIndex = products.indexOf(item);
+            const imgUrl = item.image ? item.image : "https://via.placeholder.com/400x300/e2e8f0/94a3b8?text=No+Image";
+            
+            const card = `
+            <div class="card" onclick="copyCode('${item.id}')">
+                <div class="action-row">
+                    <button class="mini-btn" onclick="openEdit(event, ${realIndex})"><i class="ri-pencil-fill icon-edit"></i></button>
+                    <button class="mini-btn" onclick="deleteItem(event, ${realIndex})"><i class="ri-delete-bin-7-fill icon-del"></i></button>
+                </div>
+                <div class="card-img-wrap">
+                    <span class="card-badge">${item.category}</span>
+                    <img src="${imgUrl}" class="card-img" loading="lazy">
+                </div>
+                <div class="card-body">
+                    <div class="card-title">${item.name}</div>
+                    <div class="code-box">
+                        <span class="code-text">#${item.id}</span>
+                        <i class="ri-file-copy-line" style="color:var(--primary)"></i>
+                    </div>
+                </div>
+            </div>`;
+            dom.catalog.innerHTML += card;
+        });
+    }
+
+    function setFilter(cat) { currentFilter = cat; render(); }
+
+    function openProductModal() {
+        editIndex = -1;
+        document.getElementById('modalTitle').innerText = "เพิ่มสินค้า";
+        document.getElementById('btnSave').innerText = "บันทึก";
+        document.getElementById('inputName').value = "";
+        document.getElementById('inputId').value = "";
+        document.getElementById('inputFile').value = "";
+        updateCatSelect();
+        openModal('modalProduct');
+    }
+
+    function openEdit(e, index) {
+        e.stopPropagation();
+        editIndex = index;
+        const item = products[index];
+        document.getElementById('modalTitle').innerText = "แก้ไขสินค้า";
+        document.getElementById('btnSave').innerText = "อัปเดต";
+        document.getElementById('inputName').value = item.name;
+        document.getElementById('inputId').value = item.id;
+        document.getElementById('inputFile').value = "";
+        updateCatSelect();
+        document.getElementById('inputCategory').value = item.category;
+        openModal('modalProduct');
+    }
+
+    function saveFormData() {
+        const cat = document.getElementById('inputCategory').value;
+        const name = document.getElementById('inputName').value;
+        const id = document.getElementById('inputId').value;
+        const file = document.getElementById('inputFile').files[0];
+
+        if (!name || !id) { showToast('⚠️ ใส่ข้อมูลให้ครบ'); return; }
+
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = e => commitSave(cat, name, id, e.target.result);
+            reader.readAsDataURL(file);
+        } else {
+            const oldImg = editIndex > -1 ? products[editIndex].image : "";
+            commitSave(cat, name, id, oldImg);
+        }
+    }
+
+    function commitSave(category, name, id, image) {
+        const data = { category, name, id, image };
+        if (editIndex > -1) products[editIndex] = data;
+        else products.push(data);
+        saveData(); render(); closeModal('modalProduct'); showToast('✅ เรียบร้อย');
+    }
+
+    function deleteItem(e, index) {
+        e.stopPropagation();
+        if(confirm('ลบรายการนี้?')) { products.splice(index, 1); saveData(); render(); }
+    }
+
+    // Settings
+    function openSettings() {
+        renderCatManager();
+        openModal('modalSettings');
+    }
+
+    function renderCatManager() {
+        const list = document.getElementById('catManagerList');
+        list.innerHTML = "";
+        categories.forEach((c, i) => {
+            list.innerHTML += `<div class="cat-row"><span>${c}</span><i class="ri-delete-bin-line" style="color:red;cursor:pointer;" onclick="delCat(${i})"></i></div>`;
+        });
+    }
+
+    function addNewCategory() {
+        const val = document.getElementById('newCatInput').value.trim();
+        if(val && !categories.includes(val)) {
+            categories.push(val); saveData(); renderCatManager(); render();
+            document.getElementById('newCatInput').value = "";
+        }
+    }
+
+    function delCat(i) {
+        if(confirm('ลบหมวดนี้?')) { categories.splice(i, 1); saveData(); renderCatManager(); render(); }
+    }
+
+    function updateCatSelect() {
+        const s = document.getElementById('inputCategory'); s.innerHTML = "";
+        categories.forEach(c => s.innerHTML += `<option value="${c}">${c}</option>`);
+    }
+
+    function deleteAllData() {
+        if(confirm('⚠️ ลบทั้งหมดและเริ่มใหม่?')) {
+            products = []; categories = ['ทั่วไป']; saveData(); render(); closeModal('modalSettings'); showToast('ล้างข้อมูลแล้ว');
+        }
+    }
+
+    // Export/Import
+    function exportData() {
+        if(!products.length) return showToast('ไม่มีข้อมูล');
+        const blob = new Blob([JSON.stringify({products, categories})], {type: "application/json"});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `Stock_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+    }
+
+    function importData(input) {
+        const f = input.files[0];
+        if(!f) return;
+        const r = new FileReader();
+        r.onload = e => {
+            try {
+                const d = JSON.parse(e.target.result);
+                if(confirm('ข้อมูลเก่าจะถูกทับ ยืนยัน?')) {
+                    if(d.products) products = d.products;
+                    if(d.categories) categories = d.categories;
+                    saveData(); render(); closeModal('modalSettings'); showToast('นำเข้าเสร็จสิ้น');
+                }
+            } catch(err) { alert('ไฟล์ผิด'); }
+        }
+        r.readAsText(f);
+        input.value = "";
+    }
+
+    function saveData() {
+        localStorage.setItem('sm_products', JSON.stringify(products));
+        localStorage.setItem('sm_categories', JSON.stringify(categories));
+    }
+    
+    function copyCode(t) { navigator.clipboard.writeText(t).then(()=>showToast(`คัดลอก: ${t}`)); }
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+    function showToast(m) { dom.toastMsg.innerText=m; dom.toast.classList.add('show'); setTimeout(()=>dom.toast.classList.remove('show'),2000); }
+
+    render();
+</script>
+</body>
+</html>
